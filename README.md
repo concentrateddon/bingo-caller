@@ -22,6 +22,11 @@ time the app is opened online, and the old cache is deleted.
 
 ## Using it
 
+**Install button** — the home screen has an **⬇ Install app** button. Where the browser supports it (Chrome/Edge on
+Android and desktop) it opens the browser's own install prompt. Otherwise it shows short, device-specific
+instructions (iPhone/iPad Safari, Android Chrome/Samsung/Firefox, desktop Chrome/Edge/Safari). Once the app is
+installed, the button is replaced with "✓ Running as an installed app".
+
 **Setup**
 - *Games* — set the number of games; for each, name the pattern, tap squares on the card to define it, choose
   **As shown** or **Example**, take columns out of play (tap the column letter), and pick a voice pack.
@@ -50,6 +55,7 @@ See [`voicepacks/README.md`](voicepacks/README.md) for the folder layout, file n
 index.html, manifest.webmanifest, sw.js
 css/app.css
 js/main.js      app shell, home, resume prompt
+js/install.js   install button helpers (device detection, instructions)
 js/setup.js     Setup mode
 js/play.js      Play mode (state machine, timer engine, twists)
 js/balls.js     bouncing-balls draw animation

@@ -6,8 +6,24 @@ import { sampleEvening } from './patterns.js';
 import { mountSetup } from './setup.js';
 import { mountPlay } from './play.js';
 import { confirmDialog, dialog, h, toast } from './ui.js';
+import { isInstalled, showInstallHelp } from './install.js';
 
 const app = document.getElementById('app');
+
+// Chrome fires this once, early — listen before anything is awaited so it can't be missed.
+let installPrompt = null;
+let onHomeScreen = false;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  if (onHomeScreen) home();
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  toast('✓ Installed — open Bingo Caller from your home screen.');
+  if (onHomeScreen) home();
+});
+
 const voice = new Voice();
 let packs = await loadPacks();
 let db = loadDb();
@@ -19,20 +35,26 @@ if (!db) {
 navigator.storage?.persist?.().catch(() => {});
 
 let mounted = null; // whatever is currently on screen, so it can be torn down
-let installPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  installPrompt = e;
-  if (!mounted) home();
-});
 
 function show(next) {
   mounted?.destroy?.();
   mounted = next;
+  onHomeScreen = false;
+}
+
+/** Use the browser's own install prompt when it offers one; otherwise explain how for this device. */
+async function install() {
+  if (!installPrompt) return showInstallHelp();
+  const prompt = installPrompt;
+  installPrompt = null; // a prompt can only be used once
+  prompt.prompt();
+  const { outcome } = await prompt.userChoice;
+  if (outcome !== 'accepted') home(); // declined: the button falls back to instructions
 }
 
 function home() {
   show(null);
+  onHomeScreen = true;
   const saved = loadState();
   app.replaceChildren(
     h(
@@ -47,20 +69,9 @@ function home() {
         h('button', { class: 'btn huge', onclick: enterSetup }, '⚙  Setup'),
         h('button', { class: 'btn primary huge', onclick: () => enterPlay(false) }, saved ? '▶  Play (resume)' : '▶  Play'),
       ),
-      installPrompt &&
-        h(
-          'button',
-          {
-            class: 'btn ghost',
-            onclick: async () => {
-              installPrompt.prompt();
-              await installPrompt.userChoice;
-              installPrompt = null;
-              home();
-            },
-          },
-          '⬇ Install this app on the device',
-        ),
+      isInstalled()
+        ? h('p', { class: 'hint' }, '✓ Running as an installed app')
+        : h('button', { class: 'btn ghost install-btn', onclick: install }, '⬇ Install app'),
     ),
   );
 }

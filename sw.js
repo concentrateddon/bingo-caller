@@ -3,7 +3,7 @@
 //  - Voice-pack audio is cached the first time it is fetched, and kept across app updates.
 //  - voicepacks/packs.json is network-first so new packs show up as soon as you are online.
 
-const SHELL_VERSION = 'v4';
+const SHELL_VERSION = 'v5';
 const SHELL_CACHE = `bingo-shell-${SHELL_VERSION}`;
 const VOICE_CACHE = 'bingo-voice-v1'; // keep in sync with js/audio.js
 
@@ -20,6 +20,7 @@ const SHELL = [
   'js/setup.js',
   'js/play.js',
   'js/balls.js',
+  'js/install.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/maskable-512.png',

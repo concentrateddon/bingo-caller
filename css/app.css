@@ -1276,3 +1276,37 @@ select {
     grid-template-columns: 48px 1fr 190px auto;
   }
 }
+
+/* install help */
+.install-help {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.install-device {
+  color: var(--accent);
+  font-weight: 650;
+}
+.install-steps {
+  margin: 0;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.4;
+}
+.install-help details {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.install-help summary {
+  cursor: pointer;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+.install-other h3 {
+  margin: 12px 0 6px;
+  font-size: 0.95rem;
+}
