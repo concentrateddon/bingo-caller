@@ -39,6 +39,18 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Helper to strip Safari's redirect flag from cached responses
+function cleanResponse(response) {
+  if (response && response.redirected) {
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  }
+  return response;
+}
+
 async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
@@ -47,7 +59,7 @@ async function networkFirst(request, cacheName) {
     return res;
   } catch {
     const hit = await cache.match(request);
-    if (hit) return hit;
+    if (hit) return cleanResponse(hit); // Cleaned for Safari
     throw new Error('offline');
   }
 }
@@ -55,7 +67,7 @@ async function networkFirst(request, cacheName) {
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(request);
-  if (hit) return hit;
+  if (hit) return cleanResponse(hit); // Cleaned for Safari
   const res = await fetch(request);
   if (res.ok) cache.put(request, res.clone());
   return res;
@@ -72,8 +84,12 @@ self.addEventListener('fetch', (event) => {
   } else if (url.pathname.includes('/voicepacks/')) {
     event.respondWith(cacheFirst(request, VOICE_CACHE));
   } else if (request.mode === 'navigate') {
-    event.respondWith(caches.match('index.html').then((hit) => hit || fetch(request)));
+    event.respondWith(
+      caches.match('index.html').then((hit) => cleanResponse(hit) || fetch(request))
+    );
   } else {
-    event.respondWith(caches.match(request).then((hit) => hit || fetch(request)));
+    event.respondWith(
+      caches.match(request).then((hit) => cleanResponse(hit) || fetch(request))
+    );
   }
 });
