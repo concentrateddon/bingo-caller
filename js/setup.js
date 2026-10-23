@@ -3,7 +3,7 @@
 import { h, dialog, confirmDialog, toast, } from './ui.js';
 import { LETTERS, activeEvening, emptyCells, newEvening, newGame, saveDb, uid } from './store.js';
 import { PRESETS, renderCard, thumb } from './patterns.js';
-import { cachePacksOffline } from './audio.js';
+import { ALL_KEYS, REQUIRED_KEYS, cachePacksOffline, cacheStatus, clearVoiceCache } from './audio.js';
 
 const MAX_GAMES = 30;
 const hasMarks = (g) => g.patterns.some((p) => p.some(Boolean));
@@ -94,8 +94,84 @@ export function mountSetup(root, { db, getPacks, reloadPacks, onHome }) {
             ),
           ),
         ),
+        (cacheBtn = h('button', { class: 'btn small cache-btn', onclick: cacheEveningVoices }, '⬇ Cache voices')),
       ),
       h('main', { class: 'setup-main' }, tab === 'games' ? gamesTab() : tab === 'twists' ? twistsTab() : eveningTab()),
+    );
+    refreshCacheUi();
+  }
+
+  // ---------------------------------------------------------------- offline voice cache
+
+  let cacheBtn = null;
+  let caching = false;
+
+  /** Voice packs this evening's games use (found in packs.json) and ids that are not listed. */
+  function usedPacks() {
+    const ids = [...new Set(ev().games.map((g) => g.voice).filter(Boolean))];
+    const known = getPacks();
+    return { found: ids.map((id) => known.find((p) => p.id === id)).filter(Boolean), unknown: ids.filter((id) => !known.some((p) => p.id === id)) };
+  }
+
+  const isComplete = (st) => st.required >= REQUIRED_KEYS.length;
+
+  /** Repaint the top-bar button and (if open) the status list on the Evening & Data tab. */
+  async function refreshCacheUi() {
+    const { found, unknown } = usedPacks();
+    const statuses = await Promise.all(found.map(cacheStatus));
+    const allCached = found.length > 0 && statuses.every(isComplete);
+
+    if (cacheBtn?.isConnected) {
+      cacheBtn.disabled = caching || !found.length || !('caches' in window);
+      cacheBtn.title = found.length ? '' : 'Assign a voice pack to at least one game first';
+      if (!caching) cacheBtn.textContent = allCached ? '✓ Voices cached' : '⬇ Cache voices';
+    }
+
+    const list = document.querySelector('.cache-list');
+    if (list) {
+      const lines = found.map((p, i) => {
+        const st = statuses[i];
+        const name = p.name || p.id;
+        const wild = st.optional ? ` + ${st.optional} wild announcements` : '';
+        if (isComplete(st)) return h('li', { class: 'ok' }, `✓ ${name}: ready for offline play (${st.required} clips${wild})`);
+        if (st.required) return h('li', { class: 'warn' }, `⚠ ${name}: only ${st.required} of ${REQUIRED_KEYS.length} clips cached`);
+        return h('li', {}, `⬇ ${name}: not cached yet`);
+      });
+      unknown.forEach((id) => lines.push(h('li', { class: 'warn' }, `⚠ Voice pack “${id}” is used by a game but is not in the pack list`)));
+      const live = ev().games.map((g, i) => (g.voice ? 0 : i + 1)).filter(Boolean);
+      if (live.length) lines.push(h('li', {}, `Games without a voice pack (called live): ${live.join(', ')}`));
+      if (!found.length) lines.unshift(h('li', {}, 'No games have a voice pack assigned yet.'));
+      list.replaceChildren(...lines);
+    }
+    document.querySelectorAll('.cache-action').forEach((b) => (b.disabled = caching || !found.length || !('caches' in window)));
+  }
+
+  /** Download the clips of every pack this evening uses, so the game works with no internet. */
+  async function cacheEveningVoices() {
+    const { found } = usedPacks();
+    if (caching || !found.length) return;
+    caching = true;
+    const status = document.querySelector('.cache-progress');
+    const report = (d, t) => {
+      const msg = `Caching ${d}/${t}…`;
+      if (cacheBtn) cacheBtn.textContent = msg;
+      if (status) status.textContent = msg;
+    };
+    refreshCacheUi();
+    report(0, found.length * ALL_KEYS.length);
+    try {
+      await cachePacksOffline(found, report);
+    } finally {
+      caching = false;
+    }
+    const statuses = await Promise.all(found.map(cacheStatus));
+    const bad = found.filter((_, i) => !isComplete(statuses[i]));
+    if (status) status.textContent = '';
+    await refreshCacheUi();
+    toast(
+      bad.length
+        ? `⚠ Some clips couldn’t be downloaded for ${bad.map((p) => p.name || p.id).join(', ')} — are you online? Is the pack complete?`
+        : `✓ Cached ${found.map((p) => p.name || p.id).join(' + ')}. Those voices now work offline.`,
     );
   }
 
@@ -374,6 +450,7 @@ export function mountSetup(root, { db, getPacks, reloadPacks, onHome }) {
                   g.voice = e.target.value;
                   save();
                   paintList();
+                  refreshCacheUi();
                 },
               },
               voiceOpts,
@@ -519,7 +596,6 @@ export function mountSetup(root, { db, getPacks, reloadPacks, onHome }) {
   function eveningTab() {
     const e = ev();
     const wrap = h('div', { class: 'evening-tab' });
-    const progress = h('p', { class: 'hint' }, '');
     const packs = getPacks();
 
     async function askNew() {
@@ -665,30 +741,25 @@ export function mountSetup(root, { db, getPacks, reloadPacks, onHome }) {
       h(
         'section',
         { class: 'panel' },
-        h('h2', {}, 'Voice packs & offline use'),
-        h(
-          'p',
-          {},
-          packs.length
-            ? `Available voice packs: ${packs.map((p) => p.name || p.id).join(', ')}.`
-            : 'No voice packs found. Add some under voicepacks/ — see voicepacks/README.md.',
-        ),
+        h('h2', {}, 'Voices for offline play'),
+        h('p', {}, 'Cache this evening’s voice packs on this device while you have internet, so the game works anywhere. Only the packs assigned to this evening’s games are downloaded.'),
+        h('ul', { class: 'cache-list' }),
         h(
           'div',
           { class: 'row wrap' },
+          h('button', { class: 'btn primary cache-action', onclick: cacheEveningVoices }, '⬇ Cache voices for this evening'),
           h(
             'button',
             {
-              class: 'btn',
-              disabled: !packs.length || !('caches' in window),
-              onclick: async (x) => {
-                x.target.disabled = true;
-                const r = await cachePacksOffline(packs, (d, t) => (progress.textContent = `Downloading… ${d}/${t}`));
-                progress.textContent = `Done — ${r.stored} audio files stored on this device for offline use.`;
-                x.target.disabled = false;
+              class: 'btn cache-action',
+              onclick: async () => {
+                if (!(await confirmDialog('Remove cached voices?', 'Voice clips stored on this device will be deleted. You can cache them again while online.', 'Remove', true))) return;
+                await clearVoiceCache();
+                await refreshCacheUi();
+                toast('Cached voices removed');
               },
             },
-            'Download voice packs for offline use',
+            'Remove all cached voices',
           ),
           h(
             'button',
@@ -703,8 +774,8 @@ export function mountSetup(root, { db, getPacks, reloadPacks, onHome }) {
             'Refresh pack list',
           ),
         ),
-        progress,
-        h('p', { class: 'hint' }, 'Re-run the download after you change any audio files, so this device picks up the new versions.'),
+        h('p', { class: 'cache-progress hint' }),
+        h('p', { class: 'hint' }, packs.length ? `Packs on the server: ${packs.map((p) => p.name || p.id).join(', ')}. Run “Cache voices” again after any audio files change.` : 'No voice packs found. Add some under voicepacks/ — see voicepacks/README.md.'),
       ),
     );
     return wrap;

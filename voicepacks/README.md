@@ -68,7 +68,9 @@ the call lands the moment the ball appears, and normalise loudness so all clips 
    (Or edit `packs.json` by hand: `{ "id": "my-caller", "name": "My Caller", "ext": "ogg" }`.)
 3. Deploy. In the app: Setup → **Evening & Data** → *Refresh pack list*, then choose the pack per game
    (or *Apply to all games*).
-4. On each tablet, while online, press *Download voice packs for offline use* so the audio is stored on the device.
+4. On each tablet, while online, open Setup and tap **Cache voices**. It downloads only the packs assigned to the
+   current evening's games, so the audio is stored on the device and works with no internet. (Setup → Evening & Data
+   shows what is cached and can remove it.)
    Press it again whenever you change audio files.
 
 The included `demo` pack is computer-generated, only there to try things out. Delete the folder

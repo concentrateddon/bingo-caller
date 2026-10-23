@@ -30,7 +30,8 @@ time the app is opened online, and the old cache is deleted.
 - *Secret Twists* — messages that each fire once per evening on a random game, either at the start of the game
   or at a random point during it. A full-screen takeover stops calling until dismissed and **GO** is tapped.
 - *Evening & Data* — rename/duplicate/delete/export/import evenings, apply one voice pack to every game,
-  and download voice packs for offline use.
+  and see/clear what's cached for offline use. The **Cache voices** button in the Setup top bar downloads just the voice packs
+  this evening's games use — do it once, with internet, before heading to the game.
 
 **Play** — Start evening → *Start Game N* (loads the voice pack) → **GO**. Each ball: 2 seconds of bouncing balls,
 then the main screen. **STOP** pauses; while stopped, **BINGO!** ends the game and **FALSE BINGO** plays its clip,

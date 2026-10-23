@@ -1222,3 +1222,57 @@ select {
   font-weight: 500;
   opacity: 0.8;
 }
+
+/* offline voice cache */
+.cache-btn {
+  white-space: nowrap;
+}
+.cache-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cache-list li.ok {
+  color: #7be0a8;
+}
+.cache-list li.warn {
+  color: #ffb066;
+}
+
+/* narrower tablets: keep the Setup top bar on one row */
+@media (max-width: 1150px) {
+  .topbar {
+    gap: 10px;
+    padding: 0 10px;
+  }
+  .evening-pick > span {
+    display: none;
+  }
+  .evening-pick select {
+    min-width: 150px;
+    max-width: 200px;
+  }
+  .tab {
+    padding: 0 12px;
+  }
+  .tabs {
+    gap: 4px;
+  }
+  .games-tab {
+    grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
+  }
+  .game-editor {
+    grid-template-columns: minmax(220px, 36%) minmax(0, 1fr);
+    gap: 16px;
+    padding: 14px;
+  }
+  .card-frame {
+    padding: 10px;
+  }
+  .twist {
+    grid-template-columns: 48px 1fr 190px auto;
+  }
+}

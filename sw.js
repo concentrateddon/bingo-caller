@@ -3,7 +3,7 @@
 //  - Voice-pack audio is cached the first time it is fetched, and kept across app updates.
 //  - voicepacks/packs.json is network-first so new packs show up as soon as you are online.
 
-const SHELL_VERSION = 'v3';
+const SHELL_VERSION = 'v4';
 const SHELL_CACHE = `bingo-shell-${SHELL_VERSION}`;
 const VOICE_CACHE = 'bingo-voice-v1'; // keep in sync with js/audio.js
 
@@ -82,7 +82,8 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.endsWith('/voicepacks/packs.json')) {
     event.respondWith(networkFirst(request, VOICE_CACHE));
   } else if (url.pathname.includes('/voicepacks/')) {
-    event.respondWith(cacheFirst(request, VOICE_CACHE));
+    // the app's "Cache voices" button asks for cache: 'reload' to force fresh copies
+    event.respondWith(request.cache === 'reload' ? fetch(request) : cacheFirst(request, VOICE_CACHE));
   } else if (request.mode === 'navigate') {
     event.respondWith(
       caches.match('index.html').then((hit) => cleanResponse(hit) || fetch(request))

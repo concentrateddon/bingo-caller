@@ -11,7 +11,8 @@ export const BALL_KEYS = Array.from({ length: 75 }, (_, i) => ballKey(i + 1));
 // Optional clips: one announcement per digit, played before a WILD round ("…mark every ball ending in 7…").
 // A pack without them still works; the round just starts without an announcement.
 export const WILD_KEYS = Array.from({ length: 10 }, (_, d) => `Wild${d}`);
-export const ALL_KEYS = [...BALL_KEYS, 'Bingo', 'FalseBingo', ...WILD_KEYS];
+export const REQUIRED_KEYS = [...BALL_KEYS, 'Bingo', 'FalseBingo'];
+export const ALL_KEYS = [...REQUIRED_KEYS, ...WILD_KEYS];
 
 export const packUrl = (pack, key) => `voicepacks/${encodeURIComponent(pack.id)}/${key}.${pack.ext || 'mp3'}`;
 
@@ -150,18 +151,43 @@ export async function cachePacksOffline(packs, onProgress) {
   const worker = async () => {
     while (queue.length) {
       const url = queue.shift();
-      try {
-        const res = await fetch(url, { cache: 'reload' });
-        if (res.ok) {
-          await cache.put(url, res);
-          stored++;
+      // retry transient failures (flaky wifi, busy server); a 404 just means the clip doesn't exist
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(url, { cache: 'reload' });
+          if (res.ok) {
+            await cache.put(url, res);
+            stored++;
+            break;
+          }
+          if (res.status === 404) break;
+        } catch {
+          /* offline or interrupted: try again */
         }
-      } catch {
-        /* offline or missing */
+        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
       }
       onProgress?.(++done, jobs.length);
     }
   };
   await Promise.all(Array.from({ length: 6 }, worker));
   return { stored, total: jobs.length };
+}
+
+const absUrl = (pack, key) => new URL(packUrl(pack, key), document.baseURI).href;
+
+/** How much of a pack is stored on this device: { required, optional } clip counts. */
+export async function cacheStatus(pack) {
+  if (!('caches' in window)) return { required: 0, optional: 0 };
+  const cache = await caches.open(VOICE_CACHE);
+  const have = new Set((await cache.keys()).map((r) => r.url));
+  const count = (keys) => keys.filter((k) => have.has(absUrl(pack, k))).length;
+  return { required: count(REQUIRED_KEYS), optional: count(WILD_KEYS) };
+}
+
+/** Delete every cached voice clip (the pack list itself is kept). */
+export async function clearVoiceCache() {
+  const cache = await caches.open(VOICE_CACHE);
+  for (const req of await cache.keys()) {
+    if (!new URL(req.url).pathname.endsWith('/voicepacks/packs.json')) await cache.delete(req);
+  }
 }
