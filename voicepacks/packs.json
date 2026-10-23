@@ -1,0 +1,9 @@
+{
+  "packs": [
+    {
+      "id": "demo",
+      "name": "Demo voice (computer-generated)",
+      "ext": "m4a"
+    }
+  ]
+}
