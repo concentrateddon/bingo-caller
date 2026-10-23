@@ -1,6 +1,56 @@
 {
   "packs": [
     {
+      "id": "Announcer",
+      "name": "Announcer",
+      "ext": "m4a"
+    },
+    {
+      "id": "Cowboy",
+      "name": "Cowboy",
+      "ext": "m4a"
+    },
+    {
+      "id": "Crooner",
+      "name": "Crooner",
+      "ext": "m4a"
+    },
+    {
+      "id": "DJ",
+      "name": "DJ",
+      "ext": "m4a"
+    },
+    {
+      "id": "Elf",
+      "name": "Elf",
+      "ext": "m4a"
+    },
+    {
+      "id": "Grandpa",
+      "name": "Grandpa",
+      "ext": "m4a"
+    },
+    {
+      "id": "Queen",
+      "name": "Queen",
+      "ext": "m4a"
+    },
+    {
+      "id": "Santa",
+      "name": "Santa",
+      "ext": "m4a"
+    },
+    {
+      "id": "Speedy",
+      "name": "Speedy",
+      "ext": "m4a"
+    },
+    {
+      "id": "Tipsy",
+      "name": "Tipsy",
+      "ext": "m4a"
+    },
+    {
       "id": "demo",
       "name": "Demo voice (computer-generated)",
       "ext": "m4a"
