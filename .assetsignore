@@ -1,0 +1,11 @@
+# Files Cloudflare should NOT publish with the site (same syntax as .gitignore).
+# The git history alone is ~47 MB and trips Cloudflare's 25 MiB per-file limit.
+.git
+.gitignore
+.claude
+.DS_Store
+.assetsignore
+
+# Developer-only files
+tools
+README.md
